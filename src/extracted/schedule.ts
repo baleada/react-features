@@ -1,29 +1,32 @@
-import { watch, onMounted } from 'vue'
-import type { WatchSource } from 'vue'
+import { useRef, useEffect } from 'react'
+import type { DependencyList } from 'react'
 
 /**
- * Schedule a side effect to run once after the component is mounted, then flush the side effect 'post' after any watch source change.
+ * Schedule a side effect to run once after the component is mounted, then flush the side effect effect dependency change.
  * Truly the magic that glues this entire system together.
  */
 export function schedule (
   { effect, watchSources, toEffectedStatus }: {
     effect: () => any,
-    watchSources: WatchSource[],
+    watchSources: DependencyList,
     toEffectedStatus: (current: any, previous: any) => 'stale' | 'fresh',
   }
 ) {
-  onMounted(() => {
-    effect()
-    watch(
-      watchSources,
-      (current, previous) => {
-        if (toEffectedStatus(current, previous) === 'fresh') {
-          return
-        }
+  const status = useRef<'mounted' | 'unmounted'>('unmounted'),
+        previous = useRef<DependencyList>([])
 
+  // Run the effect once, and flush it after any effect dependency change. 
+  useEffect(() => {
+    switch (status.current) {
+      case 'unmounted':
         effect()
-      },
-      { flush: 'post' }
-    )
-  })
+        status.current = 'mounted'
+        break
+      case 'mounted':
+        if (toEffectedStatus(watchSources, previous.current) === 'fresh') break
+        effect()
+    }
+
+    previous.current = watchSources
+  }, watchSources)
 }

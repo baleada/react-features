@@ -1,9 +1,9 @@
-import { shallowRef, onBeforeUnmount } from 'vue'
+import { useRef, useEffect } from 'react'
 
 export function useEffecteds () {
-  const effecteds = shallowRef(new Map<HTMLElement, number>())
+  const effecteds = useRef(new Map<HTMLElement, number>())
 
-  onBeforeUnmount(() => effecteds.value.clear())
+  useEffect(() => () => effecteds.current.clear(), [])
 
   return effecteds
 }

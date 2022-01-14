@@ -1,4 +1,4 @@
-import type { Ref } from 'vue'
+import type { MutableRefObject } from 'react'
 import { schedule} from './schedule'
 
 /**
@@ -6,7 +6,7 @@ import { schedule} from './schedule'
     Assumes that the first item in the array of watch sources will be an array of elements, and the rest 
     will be strings, booleans, or numbers, i.e. values that can be bound to DOM attributes.
  */
-export function createToEffectedStatus (effecteds: Ref<Map<Element,  number>>): Parameters<typeof schedule>[0]['toEffectedStatus'] {
+export function createToEffectedStatus (effecteds: MutableRefObject<Map<Element,  number>>): Parameters<typeof schedule>[0]['toEffectedStatus'] {
   return (current, previous) => {
     if (current.length > 1) {
       for (let i = 1; i < current.length; i++) {
@@ -17,12 +17,16 @@ export function createToEffectedStatus (effecteds: Ref<Map<Element,  number>>): 
     }
 
     const elements = current[0]
+
+    if (elements === null) {
+      return 'fresh'
+    }
   
-    if (effecteds.value.size !== elements.length) {
+    if (effecteds.current.size !== elements.length) {
       return 'stale'
     }
 
-    for (const [effected, index] of effecteds.value) {
+    for (const [effected, index] of effecteds.current) {
       // TODO: Test that shows how optional chaining is necessary for the useHead case
       if (!elements[index]?.isSameNode(effected)) {
         return 'stale'

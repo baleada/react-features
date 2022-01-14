@@ -7,9 +7,9 @@ export default new configureable.Vite()
   .includeDeps([
     '@baleada/logic'
   ])
-  .vue()
+  .react()
   .pages({
-    pagesDir: 'tests/stubs/app/src/pages',
-    extensions: ['vue']
+    pagesDir: 'tests/stubs/app/src/pages/toEffectedStatus',
+    extensions: ['tsx']
   })
   .configure()

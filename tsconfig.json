@@ -3,13 +3,14 @@
     "target": "esnext",
     "module": "esnext",
     "types": [
-      "vite-plugin-pages/client"
+      "vite-plugin-pages/client-react"
     ],
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "declaration": true,
     "declarationDir": "types",
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "jsx": "react-jsx"
   },
   "include": [
     "src/**/*",

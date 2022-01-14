@@ -1,6 +1,6 @@
-import type { WatchSource } from 'vue'
+import type { DependencyList } from "react" 
 
-export function ensureWatchSources (rawWatchSources?: WatchSource | WatchSource[]): WatchSource[] {
+export function ensureWatchSources (rawWatchSources?: DependencyList[0] | DependencyList): DependencyList {
   if (!rawWatchSources) {
     return []
   }

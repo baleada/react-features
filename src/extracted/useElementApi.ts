@@ -1,5 +1,5 @@
-import { ref, onBeforeUpdate, watch } from 'vue'
-import type { Ref } from 'vue'
+import { useState, useRef, useEffect } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { identify } from '../affordances'
 import type { Id } from '../affordances'
 import type { SupportedElement } from './ensureElementsFromAffordanceElement'
@@ -12,18 +12,18 @@ export type ElementApi<ElementType extends SupportedElement, Multiple extends bo
     ? SingleIdentifiedElementApi<ElementType>
     : SingleElementApi<ElementType>
 
-export type MultipleIdentifiedElementsApi<ElementType extends SupportedElement> = MultipleElementsApi<ElementType> & { ids: Id<Ref<ElementType[]>> }
-export type SingleIdentifiedElementApi<ElementType extends SupportedElement> = SingleElementApi<ElementType> & { id: Id<Ref<ElementType>> }
+export type MultipleIdentifiedElementsApi<ElementType extends SupportedElement> = MultipleElementsApi<ElementType> & { ids: Id<ElementType[]> }
+export type SingleIdentifiedElementApi<ElementType extends SupportedElement> = SingleElementApi<ElementType> & { id: Id<ElementType> }
 
 export type MultipleElementsApi<ElementType extends SupportedElement> = {
-  getRef: (index: number) => (el: ElementType) => any,
-  elements: Ref<ElementType[]>,
-  status: Ref<{ order: 'changed' | 'none', length: 'shortened' | 'lengthened' | 'none' }>,
+  getRef: (index: number) => (el: null | ElementType) => any,
+  elements: (null | ElementType)[],
+  status: { order: 'changed' | 'none', length: 'shortened' | 'lengthened' | 'none' },
 }
 
 export type SingleElementApi<ElementType extends SupportedElement> = {
-  ref: (el: ElementType) => any,
-  element: Ref<null | ElementType>,
+  ref: (el: null | ElementType) => any,
+  element: null | ElementType,
 }
 
 export type UseElementOptions<Multiple extends boolean, Identified extends boolean> = {
@@ -43,43 +43,57 @@ export function useElementApi<
 > (options: UseElementOptions<Multiple, Identified> = {}): ElementApi<ElementType, Multiple, Identified> {
   const { multiple, identified } = { ...defaultOptions, ...options }
 
+  const componentStatus = useRef<'rendering' | 'rendered'>('rendering')
+
   if (multiple) {
-    const elements: ElementApi<ElementType, true, false>['elements'] = ref([]),
+    const [elements, setElements]: [
+            ElementApi<ElementType, true, false>['elements'],
+            Dispatch<SetStateAction<ElementApi<ElementType, true, false>['elements']>>
+          ] = useState([]),
           getFunctionRef: ElementApi<ElementType, true, false>['getRef'] = index => newElement => {
-            if (newElement) elements.value[index] = newElement
-          },
-          status: ElementApi<ElementType, true, false>['status'] = ref({ order: 'none' as const, length: 'none' as const })
-
-    onBeforeUpdate(() => (elements.value = []))
-
-    watch(
-      elements,
-      (current, previous) => {
-        const length = (() => {
-          if (current.length > previous.length) return 'lengthened'
-          if (current.length < previous.length) return 'shortened'
-          return 'none'
-        })()
-
-        const order = (() => {
-          if (length === 'lengthened') {
-            for (let i = 0; i < previous.length; i++) {
-              if (!previous[i].isSameNode(current[i])) return 'changed'
+            if (componentStatus.current = 'rendered') {
+              componentStatus.current = 'rendering'
+              previousElements.current = currentElements.current
+              currentElements.current = []
             }
-  
-            return 'none'
-          }
 
-          for (let i = 0; i < current.length; i++) {
-            if (!current[i].isSameNode(previous[i])) return 'changed'
+            if (newElement) currentElements.current[index] = newElement
+          },
+          [status, setStatus]: [
+            ElementApi<ElementType, true, false>['status'],
+            Dispatch<SetStateAction<ElementApi<ElementType, true, false>['status']>>
+          ] = useState({ order: 'none' as const, length: 'none' as const }),
+          previousElements = useRef<(null | ElementType)[]>([]),
+          currentElements = useRef<(null | ElementType)[]>([])
+    
+    useEffect(() => {
+      setElements(currentElements.current)
+      componentStatus.current = 'rendered'
+
+      const length = (() => {
+        if (currentElements.current.length > previousElements.current.length) return 'lengthened'
+        if (currentElements.current.length < previousElements.current.length) return 'shortened'
+        return 'none'
+      })()
+
+      const order = (() => {
+        if (length === 'lengthened') {
+          for (let i = 0; i < previousElements.current.length; i++) {
+            if (!previousElements.current[i].isSameNode(currentElements.current[i])) return 'changed'
           }
 
           return 'none'
-        })()
+        }
 
-        status.value = { order, length }
-      }
-    )
+        for (let i = 0; i < currentElements.current.length; i++) {
+          if (!currentElements.current[i].isSameNode(previousElements.current[i])) return 'changed'
+        }
+
+        return 'none'
+      })()
+
+      setStatus({ order, length })
+    })
 
     if (identified) {
       const ids = identify({ element: elements })
@@ -99,8 +113,11 @@ export function useElementApi<
     } as ElementApi<ElementType, Multiple, Identified>
   }
 
-  const element: ElementApi<ElementType, false, false>['element'] = ref(null),
-        functionRef: ElementApi<ElementType, false, false>['ref'] = newElement => (element.value = newElement)
+  const [element, setElement]: [
+          ElementApi<ElementType, false, false>['element'],
+          Dispatch<SetStateAction<ElementApi<ElementType, false, false>['element']>>
+        ] = useState(null),
+        functionRef: ElementApi<ElementType, false, false>['ref'] = newElement => setElement(newElement)
 
   if (identified) {
     const id = identify({ element })

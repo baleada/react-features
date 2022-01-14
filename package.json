@@ -12,7 +12,7 @@
   "scripts": {
     "tsc:includeTests": "node -r esbuild-register scripts/includeTestsInTsconfig.ts",
     "tsc:excludeTests": "node -r esbuild-register scripts/excludeTestsFromTsconfig.ts",
-    "prepare": "npm run tsc:excludeTests && tsc && rollup --config rollup.config.ts && npm run tsc:includeTests",
+    "prepare": "npm run tsc:excludeTests && tsc && rollup --config rollup.config.ts --configPlugin typescript && npm run tsc:includeTests",
     "test:only": "run() { uvu -r esbuild-register tests/$2 $1.test.ts$; }; run",
     "test": "npm run test:only .",
     "dev": "vite"
@@ -39,10 +39,10 @@
     "url": "https://github.com/baleada/vue-features/issues"
   },
   "homepage": "https://baleada.dev",
+  "sideEffects": false,
   "devDependencies": {
     "@alexvipond/mulago-foundation-portfolio": "*",
-    "@baleada/prepare": "^0.5.12",
-    "@rollup/plugin-babel": "^5.3.0",
+    "@baleada/prepare": "^0.5.20",
     "@vue/compiler-sfc": "^3.2.2",
     "esbuild": "^0.12.19",
     "esbuild-register": "^2.6.0",
@@ -50,17 +50,18 @@
     "typescript": "^4.4.3",
     "uvu": "^0.5.1",
     "vite": "^2.4.4",
-    "vue-router": "^4.0.11",
     "vue-tsc": "^0.3.0"
   },
-  "sideEffects": false,
   "dependencies": {
     "@babel/runtime": "^7.9.2",
     "@baleada/logic": "^0.20.31",
+    "@baleada/react-composition": "^0.0.0",
     "@baleada/recognizeable-effects": "^0.7.1",
-    "@baleada/vue-composition": "^0.10.8",
+    "@types/react": "^17.0.38",
     "lazy-collections": "^0.8.0",
     "nanoid": "^3.1.25",
-    "vue": "^3.2.2"
+    "react": "^17.0.2",
+    "react-router": "^6.2.1",
+    "react-router-dom": "^6.2.1"
   }
 }
