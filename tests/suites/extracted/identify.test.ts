@@ -56,6 +56,7 @@ suite(`generates IDs for growing arrays`, async ({ puppeteer: { page } }) => {
   })
   const value = await page.evaluate(async () => [...(window as unknown as WithGlobals).testState.ids])
 
+  assert.ok(value.length === 4)
   assert.ok(value.every(id => id.length === 8))
 })
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import type { DependencyList } from 'react'
 import { nanoid } from 'nanoid/non-secure'
 

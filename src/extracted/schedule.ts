@@ -15,7 +15,6 @@ export function schedule (
   const status = useRef<'mounted' | 'unmounted'>('unmounted'),
         previous = useRef<DependencyList>([])
 
-  // Run the effect once, and flush it after any effect dependency change. 
   useEffect(() => {
     switch (status.current) {
       case 'unmounted':

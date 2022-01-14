@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, MutableRefObject } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { identify } from '../affordances'
 import type { Id } from '../affordances'
@@ -17,13 +17,13 @@ export type SingleIdentifiedElementApi<ElementType extends SupportedElement> = S
 
 export type MultipleElementsApi<ElementType extends SupportedElement> = {
   getRef: (index: number) => (el: null | ElementType) => any,
-  elements: (null | ElementType)[],
+  elements: MutableRefObject<(null | ElementType)[]>,
   status: { order: 'changed' | 'none', length: 'shortened' | 'lengthened' | 'none' },
 }
 
 export type SingleElementApi<ElementType extends SupportedElement> = {
   ref: (el: null | ElementType) => any,
-  element: null | ElementType,
+  element: MutableRefObject<null | ElementType>,
 }
 
 export type UseElementOptions<Multiple extends boolean, Identified extends boolean> = {
@@ -43,60 +43,45 @@ export function useElementApi<
 > (options: UseElementOptions<Multiple, Identified> = {}): ElementApi<ElementType, Multiple, Identified> {
   const { multiple, identified } = { ...defaultOptions, ...options }
 
-  const componentStatus = useRef<'rendering' | 'rendered'>('rendering')
-
   if (multiple) {
-    const [elements, setElements]: [
-            ElementApi<ElementType, true, false>['elements'],
-            Dispatch<SetStateAction<ElementApi<ElementType, true, false>['elements']>>
-          ] = useState([]),
+    const elements: ElementApi<ElementType, true, false>['elements'] = useRef([]),
           getFunctionRef: ElementApi<ElementType, true, false>['getRef'] = index => newElement => {
-            if (componentStatus.current = 'rendered') {
-              componentStatus.current = 'rendering'
-              previousElements.current = currentElements.current
-              currentElements.current = []
-            }
-
-            if (newElement) currentElements.current[index] = newElement
+            if (newElement) elements.current[index] = newElement
           },
           [status, setStatus]: [
             ElementApi<ElementType, true, false>['status'],
             Dispatch<SetStateAction<ElementApi<ElementType, true, false>['status']>>
           ] = useState({ order: 'none' as const, length: 'none' as const }),
-          previousElements = useRef<(null | ElementType)[]>([]),
-          currentElements = useRef<(null | ElementType)[]>([])
+          previousElements = useRef<(null | ElementType)[]>([])
     
-    useEffect(() => {
-      setElements(currentElements.current)
-      componentStatus.current = 'rendered'
-
+    setStatus((() => {
       const length = (() => {
-        if (currentElements.current.length > previousElements.current.length) return 'lengthened'
-        if (currentElements.current.length < previousElements.current.length) return 'shortened'
+        if (elements.current.length > previousElements.current.length) return 'lengthened'
+        if (elements.current.length < previousElements.current.length) return 'shortened'
         return 'none'
       })()
 
       const order = (() => {
         if (length === 'lengthened') {
           for (let i = 0; i < previousElements.current.length; i++) {
-            if (!previousElements.current[i].isSameNode(currentElements.current[i])) return 'changed'
+            if (!previousElements.current[i].isSameNode(elements.current[i])) return 'changed'
           }
 
           return 'none'
         }
 
-        for (let i = 0; i < currentElements.current.length; i++) {
-          if (!currentElements.current[i].isSameNode(previousElements.current[i])) return 'changed'
+        for (let i = 0; i < elements.current.length; i++) {
+          if (!elements.current[i].isSameNode(previousElements.current[i])) return 'changed'
         }
 
         return 'none'
       })()
 
-      setStatus({ order, length })
-    })
+      return { order, length }
+    })())
 
     if (identified) {
-      const ids = identify({ element: elements })
+      const ids = identify({ element: elements.current })
 
       return {
         getRef: getFunctionRef,
@@ -113,14 +98,11 @@ export function useElementApi<
     } as ElementApi<ElementType, Multiple, Identified>
   }
 
-  const [element, setElement]: [
-          ElementApi<ElementType, false, false>['element'],
-          Dispatch<SetStateAction<ElementApi<ElementType, false, false>['element']>>
-        ] = useState(null),
-        functionRef: ElementApi<ElementType, false, false>['ref'] = newElement => setElement(newElement)
+  const element: ElementApi<ElementType, false, false>['element'] = useRef(null),
+        functionRef: ElementApi<ElementType, false, false>['ref'] = newElement => element.current = newElement
 
   if (identified) {
-    const id = identify({ element })
+    const id = identify({ element: element.current })
     
     return {
       ref: functionRef,
