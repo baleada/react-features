@@ -8,7 +8,7 @@ const suite = withPuppeteer(
 )
 
 suite(`returns stale if a reactive reference other than the reactive array of elements triggers the effect`, async ({ puppeteer: { page } }) => {
-  await page.goto('http://localhost:3000/')
+  await page.goto('http://localhost:3000/toEffectedStatus')
   await page.waitForSelector('span')
   
   const value = await page.evaluate(async () => {
@@ -22,7 +22,7 @@ suite(`returns stale if a reactive reference other than the reactive array of el
 })
 
 suite(`returns stale if the length of the reactive array of elements has changed`, async ({ puppeteer: { page } }) => {
-  await page.goto('http://localhost:3000/')
+  await page.goto('http://localhost:3000/toEffectedStatus')
   await page.waitForSelector('span')
   
   const value = await page.evaluate(async () => {
@@ -38,7 +38,7 @@ suite(`returns stale if the length of the reactive array of elements has changed
 })
 
 suite(`returns stale if the order of the reactive array of elements has changed`, async ({ puppeteer: { page } }) => {
-  await page.goto('http://localhost:3000/')
+  await page.goto('http://localhost:3000/toEffectedStatus')
   await page.waitForSelector('span')
   
   const value = await page.evaluate(async () => {
@@ -52,7 +52,7 @@ suite(`returns stale if the order of the reactive array of elements has changed`
 })
 
 suite(`returns fresh if the reactive array of elements is refilled with the same elements`, async ({ puppeteer: { page } }) => {
-  await page.goto('http://localhost:3000/')
+  await page.goto('http://localhost:3000/toEffectedStatus')
   await page.waitForSelector('span')
   
   const value = await page.evaluate(async () => {

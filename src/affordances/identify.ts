@@ -1,14 +1,14 @@
 import { useState, useMemo, useRef } from 'react'
+import type { DependencyList } from 'react'
 import { nanoid } from 'nanoid/non-secure'
-import {
-  ensureElementsFromAffordanceElement,
-  schedule,
-  ensureWatchSources,
-  createToEffectedStatus,
-  useEffecteds,
-} from '../extracted'
-import type { BindElement } from '../extracted'
-import { DependencyList } from 'react'
+
+import { ensureElementsFromAffordanceElement } from '../extracted/ensureElementsFromAffordanceElement'
+import { schedule } from '../extracted/schedule'
+import { ensureWatchSources } from '../extracted/ensureWatchSources'
+import { createToEffectedStatus } from '../extracted/createToEffectedStatus'
+import { useEffecteds } from '../extracted/useEffecteds'
+
+import type { BindElement } from '../extracted/scheduleBind'
 
 export type IdentifyOptions = {
   watchSource?: DependencyList[0] | DependencyList,

@@ -57,18 +57,27 @@ export default function () {
     }
   }, [elements, stub]);
   
-  (window as unknown as WithGlobals).testState = {
+  useEffect(() => {
+    (window as unknown as WithGlobals).testState = {
+      element1,
+      element2,
+      elements,
+      setElements,
+      stub,
+      setStub: num => {
+        previousStub.current = stub
+        setStub(num)
+      },
+      effectedStatus,
+    }
+  }, [
     element1,
     element2,
     elements,
-    setElements,
     stub,
-    setStub: num => {
-      previousStub.current = stub
-      setStub(num)
-    },
     effectedStatus,
-  }
+  ])
+  
 
   return (
     <>

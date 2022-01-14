@@ -9,7 +9,7 @@ export default new configureable.Vite()
   ])
   .react()
   .pages({
-    pagesDir: 'tests/stubs/app/src/pages/toEffectedStatus',
+    pagesDir: 'tests/stubs/app/src/pages',
     extensions: ['tsx']
   })
   .configure()
