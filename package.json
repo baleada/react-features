@@ -54,7 +54,7 @@
   "dependencies": {
     "@babel/runtime": "^7.9.2",
     "@baleada/logic": "^0.20.31",
-    "@baleada/react-composition": "^0.0.0",
+    "@baleada/react-composition": "^0.0.1",
     "@baleada/recognizeable-effects": "^0.7.1",
     "@types/react": "^17.0.38",
     "lazy-collections": "^0.8.0",
