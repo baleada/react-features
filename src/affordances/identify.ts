@@ -71,7 +71,7 @@ export function identify<BindElementType extends BindElement> (
     effect,
     dependencyList: [ensuredElements, ...(options.dependencyList || [])],
     toEffectedStatus: createToEffectedStatus(effecteds),
-  }, { runsOnEveryLayout: isRef(element) })
+  }, { runsOnEveryUpdate: isRef(element) })
 
   return returnedRef as Id<BindElementType>
 }

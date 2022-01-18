@@ -6,7 +6,7 @@ export type ScheduleOptions = {
    * Set to `true` only when scheduling side effects for arrays of elements that have 
     a chance to reactively change order or length during the component lifecycle.
    */
-  runsOnEveryLayout?: boolean,
+  runsOnEveryUpdate?: boolean,
 }
 
 /**
@@ -23,7 +23,7 @@ export function schedule (
 ) {
   const status = useRef<'mounted' | 'unmounted'>('unmounted'),
         previous = useRef<DependencyList>([]),
-        { runsOnEveryLayout = false } = options,
+        { runsOnEveryUpdate = false } = options,
         scheduled = () => {
           switch (status.current) {
             case 'unmounted':
@@ -38,7 +38,7 @@ export function schedule (
           previous.current = dependencyList
         }
 
-  if (runsOnEveryLayout) {
+  if (runsOnEveryUpdate) {
     useLayoutEffect(scheduled)
   } else {
     useLayoutEffect(scheduled, dependencyList)

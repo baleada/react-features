@@ -52,7 +52,7 @@ export function scheduleBind<ValueType extends string | number | boolean> (
       },
       dependencyList: [elements, ...dependencyList],
       toEffectedStatus,
-    }, { runsOnEveryLayout: isRef(element) })
+    }, { runsOnEveryUpdate: isRef(element) })
 
     return
   }
@@ -78,5 +78,5 @@ export function scheduleBind<ValueType extends string | number | boolean> (
     },
     dependencyList: [elements, ...dependencyList],
     toEffectedStatus,
-  }, { runsOnEveryLayout: isRef(element) })
+  }, { runsOnEveryUpdate: isRef(element) })
 }
