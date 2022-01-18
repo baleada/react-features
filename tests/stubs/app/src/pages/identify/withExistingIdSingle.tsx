@@ -1,16 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { identify } from '../../../../../../src/affordances/identify'
 import { WithGlobals } from '../../../../../fixtures/types'
 
 export default function () {
   const [stub, setStub] = useState(null),
-        id = identify({ element: stub })
+        stubRef = useCallback(setStub, []),
+        id = identify({ element: stub });
 
-  useEffect(() => {
-    (window as unknown as WithGlobals).testState = { id }
-  }, [stub, id])
+  (window as unknown as WithGlobals).testState = { id, stub }
 
   return (
-    <span ref={setStub} id="stub" />
+    <span ref={stubRef} id="stub" />
   )
 }

@@ -21,17 +21,19 @@ export function createToEffectedStatus (effecteds: MutableRefObject<Map<Element,
     if (elements === null) {
       return 'fresh'
     }
-  
+    
     if (effecteds.current.size !== elements.length) {
       return 'stale'
     }
-
+    
+    
     for (const [effected, index] of effecteds.current) {
       // TODO: Test that shows how optional chaining is necessary for the useHead case
       if (!elements[index]?.isSameNode(effected)) {
         return 'stale'
       }
     }
+    
 
     return 'fresh'
   }

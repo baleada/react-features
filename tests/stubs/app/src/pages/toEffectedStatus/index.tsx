@@ -4,85 +4,64 @@ import { createToEffectedStatus } from '../../../../../../src/extracted/createTo
 import { WithGlobals } from '../../../../../fixtures/types'
 
 export default function () {
-  const [element1, setElement1] = useState(null)
-  const [element2, setElement2] = useState(null)
+  const element1 = useRef(null)
+  const element2 = useRef(null)
   const functionRef1 = (el) => {
-    previousElements.current = currentElements.current
-    currentElements.current = []
-    currentElements.current[0] = el
-    setElement1(el)
+    element1.current = el
   }
   const functionRef2 = (el) => {
-    currentElements.current[1] = el
-    setElement2(el)
+    element2.current = el
   }
-  const currentElements = useRef([])
-  const previousElements = useRef([])
 
   const [effectedStatus, setEffectedStatus] = useState('')
+  
+  const elements = useRef([])
+  const previousElements = useRef([])
+
+  previousElements.current = elements.current  
+  elements.current = [element1.current, element2.current]
+
+  const [stub, setStub] = useState(0)
+  const [updates, setUpdates] = useState(0)
+  const previousStub = useRef(stub)
 
   const effecteds = useEffecteds()
 
-  const [elements, setElements] = useState([])
-
-  const [stub, setStub] = useState(0)
-  const previousStub = useRef(stub)
-
   useEffect(() => {
-    setElements([element1, element2])
-
     effecteds.current.clear()
-
-    for (let i = 0; i < elements.length; i++) {
-      effecteds.current.set(elements[i], i)
-    }    
-  }, [element1, element2])
+    for (let i = 0; i < elements.current.length; i++) {
+      effecteds.current.set(elements.current[i], i)
+    }
+  })
 
   const toEffectedStatus = createToEffectedStatus(effecteds)
-
-  const status = useRef<'mounted' | 'unmounted'>('unmounted')
-
-  useEffect(() => {
-    if (status.current === 'unmounted') {
-      status.current = 'mounted'
-      return
-    }
-
-    setEffectedStatus(toEffectedStatus([elements, stub], [previousElements.current, previousStub.current]))
-  
-    effecteds.current.clear()
-
-    for (let i = 0; i < elements.length; i++) {
-      effecteds.current.set(elements[i], i)
-    }
-  }, [elements, stub]);
   
   useEffect(() => {
-    (window as unknown as WithGlobals).testState = {
-      element1,
-      element2,
-      elements,
-      setElements,
-      stub,
-      setStub: num => {
-        previousStub.current = stub
-        setStub(num)
-      },
-      effectedStatus,
-    }
-  }, [
+    setEffectedStatus(toEffectedStatus([elements.current, stub], [previousElements.current, previousStub.current]))
+  }, [stub])
+  
+  useEffect(() => {
+    setEffectedStatus(toEffectedStatus([elements.current], [previousElements.current]))
+  }, [updates]);
+  
+  (window as unknown as WithGlobals).testState = {
     element1,
     element2,
     elements,
+    updates,
+    setUpdates,
     stub,
+    setStub: num => {
+      previousStub.current = stub
+      setStub(num)
+    },
     effectedStatus,
-  ])
-  
+  }
 
   return (
     <>
       <span ref={functionRef1}></span>
-      <span ref={functionRef2}></span>
+      <div ref={functionRef2}></div>
     </>
   )
 }

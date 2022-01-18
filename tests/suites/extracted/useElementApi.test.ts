@@ -13,15 +13,15 @@ suite(`builds single element API`, async ({ puppeteer: { page } }) => {
 
   const expected: any = {}
 
-  const from = await page.evaluate(async () => (window as unknown as WithGlobals).testState.elementApi.element.value)
+  const from = await page.evaluate(async () => (window as unknown as WithGlobals).testState.elementApi.element)
   expected.from = null
 
   assert.is(from, expected.from)
   
   const to = await page.evaluate(async () => {
-    (window as unknown as WithGlobals).testState.elementApi.ref((window as unknown as WithGlobals).testState.stub.value)
+    (window as unknown as WithGlobals).testState.elementApi.ref((window as unknown as WithGlobals).testState.stub.current)
     await (window as unknown as WithGlobals).nextTick()
-    return (window as unknown as WithGlobals).testState.elementApi.element.value.tagName
+    return (window as unknown as WithGlobals).testState.elementApi.element.tagName
   })
   expected.to = 'SPAN'
 
@@ -34,18 +34,17 @@ suite(`builds multiple elements API`, async ({ puppeteer: { page } }) => {
 
   const expected: any = {}
 
-  const from = await page.evaluate(async () => [...(window as unknown as WithGlobals).testState.elementsApi.elements.value])
+  const from = await page.evaluate(async () => [...(window as unknown as WithGlobals).testState.elementsApi.elements.current])
   expected.from = []
 
   assert.equal(from, expected.from)
   
   
   const to = await page.evaluate(async () => {
-    (window as unknown as WithGlobals).testState.elementsApi.getRef(0)((window as unknown as WithGlobals).testState.stub0.value);
-    (window as unknown as WithGlobals).testState.elementsApi.getRef(1)((window as unknown as WithGlobals).testState.stub1.value);
-    (window as unknown as WithGlobals).testState.elementsApi.getRef(2)((window as unknown as WithGlobals).testState.stub2.value);
-    await (window as unknown as WithGlobals).nextTick()
-    return (window as unknown as WithGlobals).testState.elementsApi.elements.value.map(element => element.className)
+    (window as unknown as WithGlobals).testState.elementsApi.getRef(0)((window as unknown as WithGlobals).testState.stub0.current);
+    (window as unknown as WithGlobals).testState.elementsApi.getRef(1)((window as unknown as WithGlobals).testState.stub1.current);
+    (window as unknown as WithGlobals).testState.elementsApi.getRef(2)((window as unknown as WithGlobals).testState.stub2.current);
+    return (window as unknown as WithGlobals).testState.elementsApi.elements.current.map(element => element.className)
   })
   expected.to = ['0', '1', '2']
 
@@ -56,7 +55,11 @@ suite(`identifies single element`, async ({ puppeteer: { page } }) => {
   await page.goto('http://localhost:3000/useElementApi/singleIdentified')
   await page.waitForSelector('span')
 
-  const value = await page.evaluate(async () => (window as unknown as WithGlobals).testState.elementApi.id.value.length),
+  const value = await page.evaluate(async () => {
+          (window as unknown as WithGlobals).testState.elementApi.ref((window as unknown as WithGlobals).testState.stub.current);
+          await (window as unknown as WithGlobals).nextTick();
+          return (window as unknown as WithGlobals).testState.elementApi.id.current.length
+        }),
         expected = 8
 
   assert.is(value, expected)
@@ -66,7 +69,7 @@ suite(`identifies multiple elements`, async ({ puppeteer: { page } }) => {
   await page.goto('http://localhost:3000/useElementApi/multipleIdentified')
   await page.waitForSelector('span')
 
-  const value = await page.evaluate(async () => (window as unknown as WithGlobals).testState.elementsApi.ids.value.every(id => id.length === 8)),
+  const value = await page.evaluate(async () => (window as unknown as WithGlobals).testState.elementsApi.ids.current.every(id => id.length === 8)),
         expected = true
 
   assert.is(value, expected)
@@ -77,15 +80,16 @@ suite(`recognizes lengthening of multiple elements`, async ({ puppeteer: { page 
   await page.waitForSelector('span')
 
   const value = await page.evaluate(async () => {
-          (window as unknown as WithGlobals).testState.elementsApi.elements.value = [(window as unknown as WithGlobals).testState.stub0.value];
+          (window as unknown as WithGlobals).testState.elementsApi.elements.current = [(window as unknown as WithGlobals).testState.stub0.current];
+          (window as unknown as WithGlobals).testState.forceUpdate();
           await (window as unknown as WithGlobals).nextTick();
-          (window as unknown as WithGlobals).testState.elementsApi.elements.value = [
-            (window as unknown as WithGlobals).testState.stub0.value,
-            (window as unknown as WithGlobals).testState.stub1.value,
+          (window as unknown as WithGlobals).testState.elementsApi.elements.current = [
+            (window as unknown as WithGlobals).testState.stub0.current,
+            (window as unknown as WithGlobals).testState.stub1.current,
           ];  
           return {
-            order: (window as unknown as WithGlobals).testState.elementsApi.status.value.order,
-            length: (window as unknown as WithGlobals).testState.elementsApi.status.value.length,
+            order: (window as unknown as WithGlobals).testState.elementsApi.status.current.order,
+            length: (window as unknown as WithGlobals).testState.elementsApi.status.current.length,
           }
         }),
         expected = { order: 'none', length: 'lengthened' }
@@ -98,16 +102,18 @@ suite(`recognizes shortening of multiple elements`, async ({ puppeteer: { page }
   await page.waitForSelector('span')
 
   const value = await page.evaluate(async () => {
-          (window as unknown as WithGlobals).testState.elementsApi.elements.value = [
-            (window as unknown as WithGlobals).testState.stub0.value,
-            (window as unknown as WithGlobals).testState.stub1.value,
-          ];  
+          (window as unknown as WithGlobals).testState.elementsApi.elements.current = [
+            (window as unknown as WithGlobals).testState.stub0.current,
+            (window as unknown as WithGlobals).testState.stub1.current,
+          ];
+          (window as unknown as WithGlobals).testState.forceUpdate();
           await (window as unknown as WithGlobals).nextTick();
-          (window as unknown as WithGlobals).testState.elementsApi.elements.value = (window as unknown as WithGlobals).testState.elementsApi.elements.value.slice(0, 1)
+          (window as unknown as WithGlobals).testState.elementsApi.elements.current = (window as unknown as WithGlobals).testState.elementsApi.elements.current.slice(0, 1);
+          (window as unknown as WithGlobals).testState.forceUpdate();
           await (window as unknown as WithGlobals).nextTick();
           return {
-            order: (window as unknown as WithGlobals).testState.elementsApi.status.value.order,
-            length: (window as unknown as WithGlobals).testState.elementsApi.status.value.length,
+            order: (window as unknown as WithGlobals).testState.elementsApi.status.current.order,
+            length: (window as unknown as WithGlobals).testState.elementsApi.status.current.length,
           }
         }),
         expected = { order: 'none', length: 'shortened' }
@@ -120,21 +126,21 @@ suite(`recognizes reordering of multiple elements`, async ({ puppeteer: { page }
   await page.waitForSelector('span')
 
   const value = await page.evaluate(async () => {
-          (window as unknown as WithGlobals).testState.elementsApi.getRef(0)((window as unknown as WithGlobals).testState.stub0.value);
-          (window as unknown as WithGlobals).testState.elementsApi.getRef(1)((window as unknown as WithGlobals).testState.stub1.value);
+          (window as unknown as WithGlobals).testState.elementsApi.getRef(0)((window as unknown as WithGlobals).testState.stub0.current);
+          (window as unknown as WithGlobals).testState.elementsApi.getRef(1)((window as unknown as WithGlobals).testState.stub1.current);
+          (window as unknown as WithGlobals).testState.forceUpdate();
           await (window as unknown as WithGlobals).nextTick();
-          (window as unknown as WithGlobals).testState.elementsApi.elements.value = (window as unknown as WithGlobals).testState.elementsApi.elements.value.slice().reverse()
+          (window as unknown as WithGlobals).testState.elementsApi.elements.current = (window as unknown as WithGlobals).testState.elementsApi.elements.current.slice().reverse();
+          (window as unknown as WithGlobals).testState.forceUpdate();
           await (window as unknown as WithGlobals).nextTick();
           return {
-            order: (window as unknown as WithGlobals).testState.elementsApi.status.value.order,
-            length: (window as unknown as WithGlobals).testState.elementsApi.status.value.length,
+            order: (window as unknown as WithGlobals).testState.elementsApi.status.current.order,
+            length: (window as unknown as WithGlobals).testState.elementsApi.status.current.length,
           }
         }),
         expected = { order: 'changed', length: 'none' }
 
   assert.equal(value, expected)
 })
-
-
 
 suite.run()

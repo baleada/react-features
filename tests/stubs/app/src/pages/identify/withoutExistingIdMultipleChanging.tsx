@@ -16,11 +16,9 @@ export default function () {
           setStubs(createReorder<number>({ from: 1, to: 2 })(stubs))
         }
 
-  const ids = identify({ element: els.current }, { watchSource: [stubs] })
+  const ids = identify({ element: els }, { dependencyList: [stubs] });
 
-  useEffect(() => {
-    (window as unknown as WithGlobals).testState =  { ids, add, reorder }
-  }, [stubs, ids])
+  (window as unknown as WithGlobals).testState =  { ids, add, reorder }
 
   return (
     <>

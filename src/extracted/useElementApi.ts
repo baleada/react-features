@@ -1,7 +1,6 @@
-import { useState, useRef, MutableRefObject } from 'react'
-import type { Dispatch, SetStateAction } from 'react'
-import { identify } from '../affordances'
-import type { Id } from '../affordances'
+import { useRef, useEffect, useCallback, MutableRefObject, useState, Dispatch } from 'react'
+import { identify } from '../affordances/identify'
+import type { Id } from '../affordances/identify'
 import type { SupportedElement } from './ensureElementsFromAffordanceElement'
 
 export type ElementApi<ElementType extends SupportedElement, Multiple extends boolean, Identified extends boolean> = Multiple extends true
@@ -12,18 +11,18 @@ export type ElementApi<ElementType extends SupportedElement, Multiple extends bo
     ? SingleIdentifiedElementApi<ElementType>
     : SingleElementApi<ElementType>
 
-export type MultipleIdentifiedElementsApi<ElementType extends SupportedElement> = MultipleElementsApi<ElementType> & { ids: Id<ElementType[]> }
+export type MultipleIdentifiedElementsApi<ElementType extends SupportedElement> = MultipleElementsApi<ElementType> & { ids: Id<MutableRefObject<ElementType[]>> }
 export type SingleIdentifiedElementApi<ElementType extends SupportedElement> = SingleElementApi<ElementType> & { id: Id<ElementType> }
 
 export type MultipleElementsApi<ElementType extends SupportedElement> = {
-  getRef: (index: number) => (el: null | ElementType) => any,
-  elements: MutableRefObject<(null | ElementType)[]>,
-  status: { order: 'changed' | 'none', length: 'shortened' | 'lengthened' | 'none' },
+  getRef: (index: number) => (el: ElementType) => any,
+  elements: MutableRefObject<(ElementType)[]>,
+  status: MutableRefObject<{ order: 'changed' | 'none', length: 'shortened' | 'lengthened' | 'none' }>,
 }
 
 export type SingleElementApi<ElementType extends SupportedElement> = {
-  ref: (el: null | ElementType) => any,
-  element: MutableRefObject<null | ElementType>,
+  ref: (el: ElementType) => any,
+  element: ElementType,
 }
 
 export type UseElementOptions<Multiple extends boolean, Identified extends boolean> = {
@@ -45,16 +44,13 @@ export function useElementApi<
 
   if (multiple) {
     const elements: ElementApi<ElementType, true, false>['elements'] = useRef([]),
-          getFunctionRef: ElementApi<ElementType, true, false>['getRef'] = index => newElement => {
+          getFunctionRef: ElementApi<ElementType, true, false>['getRef'] = useCallback(index => newElement => {
             if (newElement) elements.current[index] = newElement
-          },
-          [status, setStatus]: [
-            ElementApi<ElementType, true, false>['status'],
-            Dispatch<SetStateAction<ElementApi<ElementType, true, false>['status']>>
-          ] = useState({ order: 'none' as const, length: 'none' as const }),
-          previousElements = useRef<(null | ElementType)[]>([])
-    
-    setStatus((() => {
+          }, []),
+          status: ElementApi<ElementType, true, false>['status'] = useRef({ order: 'none' as const, length: 'none' as const }),
+          previousElements = useRef<(ElementType)[]>([])
+
+    useEffect(() => {
       const length = (() => {
         if (elements.current.length > previousElements.current.length) return 'lengthened'
         if (elements.current.length < previousElements.current.length) return 'shortened'
@@ -77,11 +73,13 @@ export function useElementApi<
         return 'none'
       })()
 
-      return { order, length }
-    })())
+      status.current = { order, length }
+
+      previousElements.current = elements.current
+    })
 
     if (identified) {
-      const ids = identify({ element: elements.current })
+      const ids = identify({ element: elements })
 
       return {
         getRef: getFunctionRef,
@@ -98,11 +96,14 @@ export function useElementApi<
     } as ElementApi<ElementType, Multiple, Identified>
   }
 
-  const element: ElementApi<ElementType, false, false>['element'] = useRef(null),
-        functionRef: ElementApi<ElementType, false, false>['ref'] = newElement => element.current = newElement
+  const [element, setElement]: [
+          ElementApi<ElementType, false, false>['element'],
+          Dispatch<ElementApi<ElementType, false, false>['element']>,
+        ] = useState(null),
+        functionRef: ElementApi<ElementType, false, false>['ref'] = useCallback(newElement => setElement(newElement), [])
 
   if (identified) {
-    const id = identify({ element: element.current })
+    const id = identify({ element })
     
     return {
       ref: functionRef,
