@@ -72,7 +72,7 @@ suite(`adds event listeners via createEffect on arrays of elements`, async ({ pu
   await page.click('span:nth-child(1)')
   await page.click('span:nth-child(2)')
   await page.click('span:nth-child(3)')
-  const from = await page.evaluate(() => [...(window as unknown as WithGlobals).testState.counts.value])
+  const from = await page.evaluate(() => [...(window as unknown as WithGlobals).testState.counts])
   assert.equal(from, [0, 0, 0])
 
   // Mounting the child component causes listeners to be added
@@ -83,15 +83,15 @@ suite(`adds event listeners via createEffect on arrays of elements`, async ({ pu
   await page.waitForSelector('div') // Ensure child has mounted
   
   await page.click('span:nth-child(1)')
-  const stop1 = await page.evaluate(() => [...(window as unknown as WithGlobals).testState.counts.value])
+  const stop1 = await page.evaluate(() => [...(window as unknown as WithGlobals).testState.counts])
   assert.equal(stop1, [1, 0, 0])
   
   await page.click('span:nth-child(2)')
-  const stop2 = await page.evaluate(() => [...(window as unknown as WithGlobals).testState.counts.value])
+  const stop2 = await page.evaluate(() => [...(window as unknown as WithGlobals).testState.counts])
   assert.equal(stop2, [1, 1, 0])
   
   await page.click('span:nth-child(3)')
-  const stop3 = await page.evaluate(() => [...(window as unknown as WithGlobals).testState.counts.value])
+  const stop3 = await page.evaluate(() => [...(window as unknown as WithGlobals).testState.counts])
   assert.equal(stop3, [1, 1, 1])
 })
 

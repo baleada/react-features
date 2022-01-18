@@ -1,15 +1,14 @@
-import type { Ref } from 'vue'
-import { useListenable } from '@baleada/vue-composition'
+import type { MutableRefObject } from 'react'
+import { useListenable } from '@baleada/react-composition'
 import type { Listenable, ListenableOptions, ListenableSupportedType, ListenEffect, ListenOptions } from '@baleada/logic'
-import {
-  ensureElementsFromAffordanceElement,
-  ensureListenOptions,
-  createToEffectedStatus,
-  schedule,
-  toEntries,
-  useEffecteds,
-} from '../extracted'
-import type { AffordanceElement } from '../extracted'
+import { ensureElementsFromAffordanceElement } from '../extracted/ensureElementsFromAffordanceElement'
+import { ensureListenOptions } from '../extracted/ensureListenOptions'
+import { createToEffectedStatus } from '../extracted/createToEffectedStatus'
+import { schedule } from '../extracted/schedule'
+import { toEntries } from '../extracted/toEntries'
+import { useEffecteds } from '../extracted/useEffecteds'
+import type { AffordanceElement } from '../extracted/ensureElementsFromAffordanceElement'
+import { isRef } from '../extracted/isRef'
 
 type DefineOnEffect<Type extends ListenableSupportedType = ListenableSupportedType, RecognizeableMetadata extends Record<any, any> = Record<any, any>> = 
   <EffectType extends Type>(type: EffectType, effect: OnEffect<EffectType, RecognizeableMetadata>)
@@ -26,7 +25,7 @@ export type OnEffectObject<Type extends ListenableSupportedType = ListenableSupp
     listen?: Type extends 'intersect'
       ? {
         observer?: Omit<ListenOptions<'intersect'>['observer'], 'root'> & {
-          root?: ListenOptions<'intersect'>['observer']['root'] | Ref<ListenOptions<'intersect'>['observer']['root']>
+          root?: ListenOptions<'intersect'>['observer']['root'] | MutableRefObject<ListenOptions<'intersect'>['observer']['root']>
         }
       }
       : ListenOptions<Type>,
@@ -38,7 +37,7 @@ export type OnEffectCreator<Type extends ListenableSupportedType = ListenableSup
     element: HTMLElement,
     index: number,
     off: () => void,
-    listenable: Ref<Listenable<Type, RecognizeableMetadata>>
+    listenable: MutableRefObject<Listenable<Type, RecognizeableMetadata>>
   }
 ) => ListenEffect<Type>
 
@@ -66,30 +65,30 @@ export function on<Type extends ListenableSupportedType = ListenableSupportedTyp
         }),
         effecteds = useEffecteds(),
         effect = () => {
-          effecteds.value.clear()
+          effecteds.current.clear()
 
           ensuredEffects.forEach(({ listenable, listenParams: { createEffect, options } }) => {            
-            ensuredElements.value.forEach((element, index) => {
+            ensuredElements.forEach((element, index) => {
               if (!element) {
                 return
               }
 
-              effecteds.value.set(element, index)
+              effecteds.current.set(element, index)
 
-              listenable.value.stop({ target: element })
+              listenable.current.stop({ target: element })
 
               const off = () => {
-                listenable.value.stop({ target: element })
+                listenable.current.stop({ target: element })
               }
 
-              listenable.value.listen(
+              listenable.current.listen(
                 (listenEffectParam => {
                   const listenEffect = createEffect({
                     element,
                     index,
                     off,
                     // Listenable instance gives access to Recognizeable metadata
-                    listenable, 
+                    listenable,
                   })
 
                   return listenEffect(listenEffectParam)
@@ -102,9 +101,9 @@ export function on<Type extends ListenableSupportedType = ListenableSupportedTyp
 
   schedule({
     effect,
-    watchSources: [ensuredElements],
+    dependencyList: [ensuredElements],
     toEffectedStatus: createToEffectedStatus(effecteds),
-  })
+  }, { runsOnEveryUpdate: isRef(element) })
 
   // useListenable cleans up side effects automatically
 }
