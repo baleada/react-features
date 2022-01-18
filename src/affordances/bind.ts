@@ -1,11 +1,9 @@
-import type { WatchSource } from 'vue'
-import {
-  toEntries,
-  bindAttributeOrProperty,
-  bindList,
-  bindStyle,
-} from '../extracted'
-import type { BindValueGetter, BindValue, BindElement } from '../extracted'
+import type { DependencyList } from 'react'
+import { toEntries } from '../extracted/toEntries'
+import { bindAttributeOrProperty } from '../extracted/bindAttributeOrProperty'
+import { bindList } from '../extracted/bindList'
+import { bindStyle } from '../extracted/bindStyle'
+import type { BindValueGetter, BindValue, BindElement } from '../extracted/scheduleBind'
 
 // This is where value type inference from key name would take place.
 //
@@ -20,7 +18,7 @@ type DefineBindValue<Key extends BindSupportedKey> =
 
 export type BindReactiveValueGetter<Value extends string | number | boolean> = {
   get: BindValueGetter<Value>,
-  watchSource: WatchSource | WatchSource[]
+  dependencyList: DependencyList
 }
 
 export function bind<Key extends BindSupportedKey> (
@@ -40,7 +38,7 @@ export function bind<Key extends BindSupportedKey> (
         element,
         list: key,
         value: ensureValue(value) as BindValue<string>,
-        watchSources: ensureWatchSourceOrSources(value),
+        dependencyList: ensureDependencyList(value),
       })
 
       return
@@ -51,7 +49,7 @@ export function bind<Key extends BindSupportedKey> (
         element,
         property: toStyleProperty(key),
         value: ensureValue(value) as BindValue<string>,
-        watchSources: ensureWatchSourceOrSources(value),
+        dependencyList: ensureDependencyList(value),
       })
       
 
@@ -62,7 +60,7 @@ export function bind<Key extends BindSupportedKey> (
       element,
       key,
       value: ensureValue(value),
-      watchSources: ensureWatchSourceOrSources(value),
+      dependencyList: ensureDependencyList(value),
     })
   })
 }
@@ -81,9 +79,9 @@ export function ensureValue<Key extends BindSupportedKey> (value: BindReactiveVa
   return value
 }
 
-export function ensureWatchSourceOrSources<Key extends BindSupportedKey> (value: BindReactiveValueGetter<Value<Key>> | BindValue<Value<Key>>): WatchSource | WatchSource[] {
-  if (typeof value === 'object' && 'watchSource' in value) {
-    return value.watchSource
+export function ensureDependencyList<Key extends BindSupportedKey> (value: BindReactiveValueGetter<Value<Key>> | BindValue<Value<Key>>): DependencyList {
+  if (typeof value === 'object' && 'dependencyList' in value) {
+    return value.dependencyList
   }
 
   return []
