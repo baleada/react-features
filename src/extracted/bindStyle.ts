@@ -1,12 +1,12 @@
-import type { WatchSource } from 'vue'
+import type { DependencyList } from 'react'
 import { scheduleBind } from './scheduleBind'
 import type { BindValue, BindElement } from './scheduleBind'
 
-export function bindStyle ({ element, property, value, watchSources }: {
+export function bindStyle ({ element, property, value, dependencyList }: {
   element: BindElement,
   property: string,
   value: BindValue<string>,
-  watchSources: WatchSource | WatchSource[]
+  dependencyList: DependencyList
 }) {
   scheduleBind<string>(
     {
@@ -22,10 +22,7 @@ export function bindStyle ({ element, property, value, watchSources }: {
         (element as HTMLElement).style[property] = ''
       },
       value,
-      watchSources,
+      dependencyList,
     }
   )
 }
-
-
-SVGElement

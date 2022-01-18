@@ -1,16 +1,17 @@
-import type { WatchSource } from 'vue'
+import { useRef } from 'react'
+import type { DependencyList } from 'react'
 import { scheduleBind } from './scheduleBind'
 import type { BindValue, BindElement } from './scheduleBind'
 
 export function bindList (
-  { element, list, value, watchSources }: {
+  { element, list, value, dependencyList }: {
     element: BindElement,
     list: 'class' | 'rel',
     value: BindValue<string>,
-    watchSources: WatchSource | WatchSource[]
+    dependencyList: DependencyList,
   }
 ) {
-  const cache = new WeakMap<HTMLElement, string>()
+  const cache = useRef(new WeakMap<HTMLElement, string>())
 
   scheduleBind({
     element,
@@ -18,19 +19,19 @@ export function bindList (
     assign: ({ element, value }) => {
       const domTokenList: HTMLElement['classList'] = element[`${list}List`]
 
-      if (domTokenList.contains(value)) {
+      if (domTokenList.contains(`${value}`)) {
         return
       }
       
-      const cached = cache.get(element) || ''
+      const cached = cache.current.get(element) || ''
 
       domTokenList.remove(...toListStrings(cached))
-      domTokenList.add(...toListStrings(value))
+      domTokenList.add(...toListStrings(`${value}`))
       
-      cache.set(element, value)
+      cache.current.set(element, `${value}`)
     },
     remove: () => {},
-    watchSources,
+    dependencyList,
   })
 }
 
