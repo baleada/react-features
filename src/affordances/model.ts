@@ -1,6 +1,6 @@
+import type { Dispatch, SetStateAction } from 'react'
 import { ListenableSupportedType, ListenEffect, ListenEffectParam } from '@baleada/logic'
-import type { Ref } from 'vue'
-import type { BindElement } from '../extracted'
+import type { BindElement } from '../extracted/scheduleBind'
 import { bind } from './bind'
 import { on } from './on'
 
@@ -24,9 +24,10 @@ const defaultOptions: ModelOptions<string, 'input'> = {
 //     checkboxes and radiobuttons use checked property and change event;
 //     select fields use value as a prop and change as an event.
 export function model<Value extends string | number | boolean = string, EventType extends ListenableSupportedType = 'input'> (
-  { element, modelValue }: {
+  { element, modelValue, setModelValue }: {
     element: BindElement,
-    modelValue: Ref<Value>,
+    modelValue: Value,
+    setModelValue: Dispatch<SetStateAction<Value>>,
   },
   options: ModelOptions<Value, EventType> = {}
 ): void {
@@ -35,7 +36,10 @@ export function model<Value extends string | number | boolean = string, EventTyp
   bind({
     element,
     values: {
-      [key]: modelValue,
+      [key]: {
+        get: () => modelValue,
+        dependencyList: [modelValue],
+      }
     }
   })
   
@@ -44,7 +48,7 @@ export function model<Value extends string | number | boolean = string, EventTyp
     effects: defineEffect => [
       defineEffect(
         event,
-        (event => modelValue.value = toValue(event)) as ListenEffect<EventType>
+        (event => setModelValue(toValue(event))) as ListenEffect<EventType>
       )
     ]
   })
