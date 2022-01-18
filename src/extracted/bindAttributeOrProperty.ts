@@ -1,12 +1,12 @@
-import type { WatchSource } from 'vue'
+import type { DependencyList } from 'react'
 import { scheduleBind } from './scheduleBind'
 import type { BindValue, BindElement } from './scheduleBind'
 
-export function bindAttributeOrProperty<ValueType extends string | number | boolean> ({ element, key, value, watchSources }: {
+export function bindAttributeOrProperty<ValueType extends string | number | boolean> ({ element, key, value, dependencyList }: {
   element: BindElement,
   key: string,
   value: BindValue<ValueType>,
-  watchSources: WatchSource | WatchSource[],
+  dependencyList: DependencyList,
 }) {
   const ensuredKey = ensureKey(key)
 
@@ -29,7 +29,7 @@ export function bindAttributeOrProperty<ValueType extends string | number | bool
         element.removeAttribute(ensuredKey)
       },
       value,
-      watchSources,
+      dependencyList,
     }
   )
 }

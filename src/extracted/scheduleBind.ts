@@ -2,7 +2,7 @@ import type { DependencyList } from 'react'
 import { AffordanceElement, ensureElementsFromAffordanceElement } from './ensureElementsFromAffordanceElement'
 import { schedule } from './schedule'
 import { createToEffectedStatus } from './createToEffectedStatus'
-import { useEffecteds } from '.'
+import { useEffecteds } from './useEffecteds'
 import { isRef } from './isRef'
 
 export type BindElement = AffordanceElement<HTMLElement>
@@ -52,7 +52,7 @@ export function scheduleBind<ValueType extends string | number | boolean> (
       },
       dependencyList: [elements, ...dependencyList],
       toEffectedStatus,
-    }, { runsAfterEveryUpdate: isRef(element) })
+    }, { runsOnEveryLayout: isRef(element) })
 
     return
   }
@@ -78,5 +78,5 @@ export function scheduleBind<ValueType extends string | number | boolean> (
     },
     dependencyList: [elements, ...dependencyList],
     toEffectedStatus,
-  }, { runsAfterEveryUpdate: isRef(element) })
+  }, { runsOnEveryLayout: isRef(element) })
 }
