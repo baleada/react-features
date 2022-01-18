@@ -1,7 +1,7 @@
 {
-  "name": "@baleada/vue-features",
+  "name": "@baleada/react-features",
   "version": "0.11.7",
-  "description": "User interface features composed from Baleada Composition functions and the Vue 3 API",
+  "description": "User interface features composed from Baleada Composition functions and React",
   "module": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
@@ -19,11 +19,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/baleada/vue-features.git"
+    "url": "git+https://github.com/baleada/react-features.git"
   },
   "keywords": [
     "baleada",
-    "vue",
+    "react",
     "composition function",
     "hook",
     "user interface",
@@ -36,14 +36,13 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/baleada/vue-features/issues"
+    "url": "https://github.com/baleada/react-features/issues"
   },
   "homepage": "https://baleada.dev",
   "sideEffects": false,
   "devDependencies": {
     "@alexvipond/mulago-foundation-portfolio": "*",
     "@baleada/prepare": "^0.5.20",
-    "@vue/compiler-sfc": "^3.2.2",
     "esbuild": "^0.12.19",
     "esbuild-register": "^2.6.0",
     "rollup": "^2.56.2",
