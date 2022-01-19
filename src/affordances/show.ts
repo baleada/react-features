@@ -1,7 +1,7 @@
-import { ref, watch } from 'vue'
-import { scheduleBind } from '../extracted'
-import type { BindElement, BindValue } from '../extracted'
-import { BindReactiveValueGetter, ensureValue, ensureWatchSourceOrSources } from './bind'
+import { useRef } from 'react'
+import { scheduleBind } from '../extracted/scheduleBind'
+import type { BindElement, BindValue } from '../extracted/scheduleBind'
+import { BindReactiveValueGetter, ensureValue, ensureDependencyList } from './bind'
 
 export type ShowOptions = {
   transition?: TransitionOption
@@ -24,26 +24,28 @@ export function show (
   { element, condition }: { element: BindElement, condition: BindValue<boolean> | BindReactiveValueGetter<boolean> },
   options: ShowOptions = {},
 ) {
-  const originalDisplays = new WeakMap<HTMLElement, string>(),
-        cancels = new WeakMap<HTMLElement, undefined | (() => boolean)>(),
-        statuses = new WeakMap<HTMLElement, 'appeared'>(),
+  const originalDisplays = useRef(new WeakMap<HTMLElement, string>()),
+        cancels = useRef(new WeakMap<HTMLElement, undefined | (() => boolean)>()),
+        statuses = useRef(new WeakMap<HTMLElement, 'appeared'>()),
         { transition } = options
+
+  console.log(ensureDependencyList(condition))
 
   scheduleBind<boolean>(
     {
       element,
       assign: ({ element, value, index }) => {
-        const didCancel = cancels.get(element)?.()
+        const didCancel = cancels.current.get(element)?.()
 
-        if (!originalDisplays.get(element)) {
+        if (!originalDisplays.current.get(element)) {
           const originalDisplay = window.getComputedStyle(element).display
-          originalDisplays.set(element, originalDisplay === 'none' ? 'block' : originalDisplay) // TODO: Is block a sensible default? Is it necessary? Is there a better way to get the default display a particular tag would have?
+          originalDisplays.current.set(element, originalDisplay === 'none' ? 'block' : originalDisplay) // TODO: Is block a sensible default? Is it necessary? Is there a better way to get the default display a particular tag would have?
         }
 
-        const originalDisplay = originalDisplays.get(element)
+        const originalDisplay = originalDisplays.current.get(element)
 
         if (didCancel) {
-          cancels.set(element, undefined)
+          cancels.current.set(element, undefined)
 
           if (value) {
             // Transition canceled, element should be shown
@@ -83,13 +85,13 @@ export function show (
             cancel: transition?.leave?.cancel,
           })
   
-          cancels.set(element, cancel)
+          cancels.current.set(element, cancel)
           return
         }
 
         if (value) {
           // Appear
-          if (statuses.get(element) !== 'appeared') {
+          if (statuses.current.get(element) !== 'appeared') {
             if ((element as HTMLElement).style.display === originalDisplay) {
               return
             }
@@ -113,8 +115,8 @@ export function show (
               cancel: (hooks as Transition)?.cancel,
             })
   
-            cancels.set(element, cancel)
-            statuses.set(element, 'appeared')
+            cancels.current.set(element, cancel)
+            statuses.current.set(element, 'appeared')
             return
           }
 
@@ -134,47 +136,35 @@ export function show (
             cancel: transition?.enter?.cancel,
           })
 
-          cancels.set(element, cancel)
+          cancels.current.set(element, cancel)
           return
         }
       },
       remove: () => {},
       value: ensureValue(condition) as BindValue<boolean>,
-      watchSources: ensureWatchSourceOrSources(condition),
+      dependencyList: ensureDependencyList(condition),
     }
   )
 }
 
 function useTransition ({ element, index, before, start, active, end, after, cancel }) {
-  const status = ref('ready'),
-        done = () => {
-          stopWatchingStatus()
+  let status: 'ready' | 'transitioning' | 'canceled' | 'transitioned' = 'ready'
 
-          end(status.value)
+  const done = () => {
+          end(status)
 
-          if (status.value === 'canceled') {
+          if (status === 'canceled') {
             return
           }
 
           after?.({ element, index })
-          status.value = 'transitioned'
+          status = 'transitioned'
         }
 
   before?.({ element, index })
   
   start()
-  status.value = 'transitioning'
-
-  const stopWatchingStatus = watch(
-    [status],
-    () => {
-      if (status.value === 'canceled') {
-        cancel({ element, index })
-        done()
-      }
-    },
-    { flush: 'post' }
-  )
+  status = 'transitioning'
 
   if (active) {
     active?.({ element, index, done })
@@ -183,11 +173,13 @@ function useTransition ({ element, index, before, start, active, end, after, can
   }
 
   return () => {
-    if (status.value === 'transitioned') {
+    if (status === 'transitioned') {
       return false
     }
     
-    status.value = 'canceled'
+    status = 'canceled'
+    cancel({ element, index })
+    done()
     return true
   }
 }
