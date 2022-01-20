@@ -103,7 +103,7 @@ export function on<Type extends ListenableSupportedType = ListenableSupportedTyp
     effect,
     dependencyList: [ensuredElements],
     toEffectedStatus: createToEffectedStatus(effecteds),
-  }, { runsOnEveryUpdate: isRef(element) })
+  }, { runsOnEveryLayout: isRef(element) })
 
   // useListenable cleans up side effects automatically
 }
