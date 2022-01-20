@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, MutableRefObject, useState, Dispatch } from 'react'
-import { identify } from '../affordances/identify'
-import type { Id } from '../affordances/identify'
+import { identify } from '../affordances'
+import type { Id } from '../affordances'
 import type { SupportedElement } from './ensureElementsFromAffordanceElement'
 
 export type ElementApi<ElementType extends SupportedElement, Multiple extends boolean, Identified extends boolean> = Multiple extends true

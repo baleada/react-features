@@ -1,9 +1,8 @@
-import { isRef, watch } from 'vue'
-import type { Ref } from 'vue'
+import { useRef, useEffect } from 'react'
+import type { MutableRefObject } from 'react'
 import { findIndex } from 'lazy-collections'
 import { createReduce, Pickable } from '@baleada/logic'
 import type { MultipleIdentifiedElementsApi } from './useElementApi'
-import { ensureWatchSources } from './ensureWatchSources'
 import { ensureGetStatus } from './ensureGetStatus'
 import type { StatusOption } from './ensureGetStatus'
 import { createToNextEligible, createToPreviousEligible } from './createToEligible'
@@ -16,11 +15,12 @@ const defaultEligiblePickingOptions: BaseEligiblePickingOptions = {
 }
 
 /**
- * Creates methods for picking only the elements that are considered possible picks, and updating picks if element ability changes. Methods return the ability of the item, if any, that they pick.
+ * Creates methods for picking only the elements that are considered possible picks,
+   and updating picks if element ability changes. Methods return the ability of the item, if any, that they pick.
  */
 export function createEligiblePicking (
   { pickable, ability, elementsApi }: {
-    pickable: Ref<Pickable<HTMLElement>>,
+    pickable: MutableRefObject<Pickable<HTMLElement>>,
     ability: StatusOption<'enabled' | 'disabled'>,
     elementsApi: MultipleIdentifiedElementsApi<HTMLElement>,
   }
@@ -35,41 +35,39 @@ export function createEligiblePicking (
 
           if (
             (typeof ability === 'string' && ability === 'disabled')
-            || (isRef(ability) && ability.value === 'disabled')
           ) {
             return 'none'
           }
 
           if (
             (typeof ability === 'string' && ability === 'enabled')
-            || (isRef(ability) && ability.value === 'enabled')
           ) {
-            const eligible = new Pickable(pickable.value.array)
+            const eligible = new Pickable(pickable.current.array)
               .pick(indexOrIndices)
               .picks
-              .filter(index => toEligibility({ index, element: elementsApi.elements.value[index] }) === 'eligible')
+              .filter(index => toEligibility({ index, element: elementsApi.elements.current[index] }) === 'eligible')
             
-            pickable.value.pick(eligible, pickOptions)
+            pickable.current.pick(eligible, pickOptions)
             return 'enabled'
           }
 
-          const eligible = new Pickable(pickable.value.array)
+          const eligible = new Pickable(pickable.current.array)
             .pick(indexOrIndices)
             .picks
             .filter(index =>
               getAbility(index) === 'enabled'
-              && toEligibility({ index, element: elementsApi.elements.value[index] }) === 'eligible'
+              && toEligibility({ index, element: elementsApi.elements.current[index] }) === 'eligible'
             )
 
           if (eligible.length > 0) {
-            pickable.value.pick(eligible, pickOptions)
+            pickable.current.pick(eligible, pickOptions)
             return 'enabled'
           }
 
           return 'none'
         },
         next: ReturnType<typeof createEligiblePicking>['next'] = (index, options = {}) => {
-          if (index === pickable.value.array.length - 1) {
+          if (index === pickable.current.array.length - 1) {
             return 'none'
           }
 
@@ -77,12 +75,11 @@ export function createEligiblePicking (
 
           if (
             (typeof ability === 'string' && ability === 'enabled')
-            || (isRef(ability) && ability.value === 'enabled')
           ) {
             const nextEligible = toNextEligible({ index, toEligibility })
             
             if (typeof nextEligible === 'number') {
-              pickable.value.pick(nextEligible, pickOptions)
+              pickable.current.pick(nextEligible, pickOptions)
               return 'enabled'
             }
   
@@ -97,7 +94,7 @@ export function createEligiblePicking (
           })
             
           if (typeof nextEligible === 'number') {
-            pickable.value.pick(nextEligible, pickOptions)
+            pickable.current.pick(nextEligible, pickOptions)
             return 'enabled'
           }
 
@@ -113,12 +110,11 @@ export function createEligiblePicking (
 
           if (
             (typeof ability === 'string' && ability === 'enabled')
-            || (isRef(ability) && ability.value === 'enabled')
           ) {
             const previousEligible = toPreviousEligible({ index, toEligibility })
             
             if (typeof previousEligible === 'number') {
-              pickable.value.pick(previousEligible, pickOptions)
+              pickable.current.pick(previousEligible, pickOptions)
               return 'enabled'
             }
   
@@ -133,7 +129,7 @@ export function createEligiblePicking (
           })
         
           if (typeof previousEligible === 'number') {
-            pickable.value.pick(previousEligible, pickOptions)
+            pickable.current.pick(previousEligible, pickOptions)
             return 'enabled'
           }
 
@@ -141,50 +137,38 @@ export function createEligiblePicking (
         },
         toPreviousEligible = createToPreviousEligible({ elementsApi, loops: false })
 
-  if (isRef(ability)) {
-    watch(
-      ability,
-      () => {
-        if (ability.value === 'disabled') {
-          pickable.value.omit()
+  if (typeof ability !== 'string' && typeof ability !== 'function') {
+    useEffect(() => {
+      const p = new Pickable(pickable.current.array).pick(pickable.current.picks)
+
+      p.array.forEach((_, index) => {
+        if (ability.get({ element: elementsApi.elements.current[index], index }) === 'disabled') {
+          p.omit(index)
         }
-      }
-    )
-  } else if (typeof ability !== 'string' && typeof ability !== 'function') {
-    watch(
-      ensureWatchSources(ability.watchSource),
-      () => {
-        const p = new Pickable(pickable.value.array).pick(pickable.value.picks)
+      })
 
-        p.array.forEach((_, index) => {
-          if (ability.get({ element: elementsApi.elements.value[index], index }) === 'disabled') {
-            p.omit(index)
-          }
-        })
-
-        pickable.value.pick(p.picks, { replace: 'all' })
-      }
-    )
+      pickable.current.pick(p.picks, { replace: 'all' })
+    }, ability.dependencyList)
   }
 
-  watch(
-    [elementsApi.status, elementsApi.elements],
-    (currentSources, previousSources) => {
-      const { 0: status, 1: currentElements } = currentSources,
-            { 1: previousElements } = previousSources
+
+  useEffect(() => {
+      const { status: { current: status }, elements: { current: currentElements } } = elementsApi
 
       if (status.order === 'changed') {
         const indices = createReduce<number, number[]>((indices, pick) => {
-          const index = findIndex<HTMLElement>(element => element.isSameNode(previousElements[pick]))(currentElements) as number
+          const index = findIndex<HTMLElement>(element => element.isSameNode(previousElements.current[pick]))(currentElements) as number
         
           if (typeof index === 'number') {
             indices.push(index)
           }
 
           return indices
-        }, [])(pickable.value.picks)
+        }, [])(pickable.current.picks)
 
         exact(indices, { replace: 'all' })
+
+        return
       }
 
       if (status.length === 'shortened') {
@@ -194,10 +178,10 @@ export function createEligiblePicking (
           }
 
           return indices
-        }, [])(pickable.value.picks)
+        }, [])(pickable.current.picks)
 
         if (indices.length === 0) {
-          pickable.value.omit()
+          pickable.current.omit()
           return
         }
 
@@ -205,6 +189,8 @@ export function createEligiblePicking (
       }
     }
   )
+
+  const previousElements = useRef<MultipleIdentifiedElementsApi<HTMLElement>['elements']['current']>([])
 
   return {
     exact,
