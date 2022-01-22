@@ -13,9 +13,11 @@ export default function () {
 
   const navigateable = useNavigateable<HTMLElement>([]);
 
-  // useLayoutEffect(() => {
-  //   navigateable.current.array = elementsApi.elements.current
-  // });
+  useLayoutEffect(() => {
+    if (elementsApi.status.current.order !== 'none' || elementsApi.status.current.length !== 'none') {
+      navigateable.current.array = elementsApi.elements.current
+    }
+  });
 
   const [abilities, setAbilities] = useState(new Array(10).fill('disabled'))
   const ability = ({ index }) => abilities[index];

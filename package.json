@@ -1,6 +1,6 @@
 {
   "name": "@baleada/react-features",
-  "version": "0.11.7",
+  "version": "0.0.0",
   "description": "User interface features composed from Baleada Composition functions and React",
   "module": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -48,11 +48,10 @@
     "rollup": "^2.56.2",
     "typescript": "^4.4.3",
     "uvu": "^0.5.1",
-    "vite": "^2.4.4",
-    "vue-tsc": "^0.3.0"
+    "vite": "^2.4.4"
   },
   "dependencies": {
-    "@babel/runtime": "^7.9.2",
+    "@babel/runtime": "^7.16.7",
     "@baleada/logic": "^0.20.31",
     "@baleada/react-composition": "^0.0.1",
     "@baleada/recognizeable-effects": "^0.7.1",
