@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, MutableRefObject, useState, Dispatch } from 'react'
+import { useRef, useLayoutEffect, useCallback, MutableRefObject, useState, Dispatch } from 'react'
 import { identify } from '../affordances'
 import type { Id } from '../affordances'
 import type { SupportedElement } from './ensureElementsFromAffordanceElement'
@@ -50,7 +50,7 @@ export function useElementApi<
           status: ElementApi<ElementType, true, false>['status'] = useRef({ order: 'none' as const, length: 'none' as const }),
           previousElements = useRef<(ElementType)[]>([])
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       const length = (() => {
         if (elements.current.length > previousElements.current.length) return 'lengthened'
         if (elements.current.length < previousElements.current.length) return 'shortened'
@@ -75,7 +75,7 @@ export function useElementApi<
 
       status.current = { order, length }
 
-      previousElements.current = elements.current
+      previousElements.current = [...elements.current]
     })
 
     if (identified) {
