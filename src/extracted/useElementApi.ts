@@ -50,6 +50,8 @@ export function useElementApi<
           status: ElementApi<ElementType, true, false>['status'] = useRef({ order: 'none' as const, length: 'none' as const }),
           previousElements = useRef<(ElementType)[]>([])
 
+    elements.current = []
+
     useLayoutEffect(() => {
       const length = (() => {
         if (elements.current.length > previousElements.current.length) return 'lengthened'
