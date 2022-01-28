@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useLayoutEffect } from 'react'
 import type { MutableRefObject } from 'react'
 import { findIndex } from 'lazy-collections'
 import { createReduce, Pickable } from '@baleada/logic'
@@ -138,7 +138,7 @@ export function createEligiblePicking (
         toPreviousEligible = createToPreviousEligible({ elementsApi, loops: false })
 
   if (typeof ability !== 'string' && typeof ability !== 'function') {
-    useEffect(() => {
+    useLayoutEffect(() => {
       const p = new Pickable(pickable.current.array).pick(pickable.current.picks)
 
       p.array.forEach((_, index) => {
@@ -151,13 +151,14 @@ export function createEligiblePicking (
     }, ability.dependencyList)
   }
 
+  useLayoutEffect(() => {
+      const { status, elements: currentElements } = elementsApi
 
-  useEffect(() => {
-      const { status: { current: status }, elements: { current: currentElements } } = elementsApi
+      debugger
 
-      if (status.order === 'changed') {
+      if (status.current.order === 'changed') {
         const indices = createReduce<number, number[]>((indices, pick) => {
-          const index = findIndex<HTMLElement>(element => element.isSameNode(previousElements.current[pick]))(currentElements) as number
+          const index = findIndex<HTMLElement>(element => element.isSameNode(previousElements.current[pick]))(currentElements.current) as number
         
           if (typeof index === 'number') {
             indices.push(index)
@@ -171,9 +172,9 @@ export function createEligiblePicking (
         return
       }
 
-      if (status.length === 'shortened') {
+      if (status.current.length === 'shortened') {
         const indices = createReduce<number, number[]>((indices, pick) => {
-          if (pick <= currentElements.length - 1) {
+          if (pick <= currentElements.current.length - 1) {
             indices.push(pick)
           }
 
@@ -187,6 +188,8 @@ export function createEligiblePicking (
 
         exact(indices, { replace: 'all' })
       }
+
+      previousElements.current = [...currentElements.current]
     }
   )
 
