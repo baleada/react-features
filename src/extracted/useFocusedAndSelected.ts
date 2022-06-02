@@ -1,6 +1,6 @@
-import { onMounted, watch, watchPostEffect, nextTick } from 'vue'
-import type { Ref } from 'vue'
-import { useNavigateable, usePickable } from '@baleada/vue-composition'
+import { useLayoutEffect } from 'react'
+import type { MutableRefObject } from 'react'
+import { useNavigateable, usePickable } from '@baleada/react-composition'
 import type { Navigateable, Pickable } from '@baleada/logic'
 import { touches } from '@baleada/recognizeable-effects'
 import type { TouchesTypes, TouchesMetadata } from '@baleada/recognizeable-effects'
@@ -10,7 +10,9 @@ import { createEligibleNavigation } from './createEligibleNavigation'
 import { createEligiblePicking } from './createEligiblePicking'
 import { ensureGetStatus } from './ensureGetStatus'
 import type { StatusOption } from './ensureGetStatus'
-import { ensureWatchSourcesFromStatus } from './ensureWatchSourcesFromStatus'
+import { ensureDependencyListFromStatus } from './ensureDependencyListFromStatus'
+import { useGuardedLayoutEffect } from './useGuardedLayoutEffect'
+import { defineDependencyObject } from './schedule'
 
 export type FocusedAndSelected<Multiselectable extends boolean = false> = Multiselectable extends true
   ? FocusedAndSelectedBase & {
@@ -23,9 +25,9 @@ export type FocusedAndSelected<Multiselectable extends boolean = false> = Multis
   }
 
 type FocusedAndSelectedBase = {
-  focused: Ref<Navigateable<HTMLElement>>,
+  focused: MutableRefObject<Navigateable<HTMLElement>>,
   focus: ReturnType<typeof createEligibleNavigation>,
-  selected: Ref<Pickable<HTMLElement>>,
+  selected: MutableRefObject<Pickable<HTMLElement>>,
   is: {
     focused: (index: number) => boolean,
     selected: (index: number) => boolean,
@@ -49,7 +51,7 @@ type UseFocusedAndSelectedConfigBase<Multiselectable extends boolean = false> = 
   selectsOnFocus: boolean,
   loops: Parameters<Navigateable<HTMLElement>['next']>[0]['loops'],
   disabledElementsReceiveFocus: boolean,
-  query?: Ref<string>,
+  query?: string,
 }
 
 export function useFocusedAndSelected<Multiselectable extends boolean = false> (
@@ -73,14 +75,14 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
     values: {
       ariaDisabled: {
         get: ({ index }) => getAbility(index) === 'disabled' ? true : undefined,
-        watchSource: ensureWatchSourcesFromStatus(ability),
+        dependencyList: ensureDependencyListFromStatus(ability),
       },
     },
   })
 
 
   // FOCUSED
-  const focused: FocusedAndSelected<true>['focused'] = useNavigateable(elementsApi.elements.value),
+  const focused: FocusedAndSelected<true>['focused'] = useNavigateable(elementsApi.elements.current),
         focus: FocusedAndSelected<true>['focus'] = createEligibleNavigation({
           disabledElementsAreEligibleLocations: disabledElementsReceiveFocus,
           navigateable: focused,
@@ -88,43 +90,49 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
           ability,
           elementsApi,
         }),
-        isFocused: FocusedAndSelected<true>['is']['focused'] = index => focused.value.location === index
+        isFocused: FocusedAndSelected<true>['is']['focused'] = index => focused.current.location === index
 
-  onMounted(() => {
-    watchPostEffect(() => focused.value.array = elementsApi.elements.value)
+  useLayoutEffect(() => {
+    if (elementsApi.status.current.order !== 'none' || elementsApi.status.current.length !== 'none') {
+      focused.current.array = elementsApi.elements.current
+    }
+  })
 
+  useLayoutEffect(() => {
     const initialFocused = Array.isArray(initialSelected)
       ? initialSelected[initialSelected.length - 1]
       : initialSelected
     
-    focused.value.navigate(initialFocused)
+    focused.current.navigate(initialFocused)
+  }, [])
 
-    watch(
-      () => focused.value.location,
-      () => {
-        if (elementsApi.elements.value[focused.value.location]?.isSameNode(document.activeElement)) {
-          return
-        }
-        
-        elementsApi.elements.value[focused.value.location]?.focus()
-      },
-      { flush: 'post' }
-    )
+  useGuardedLayoutEffect({
+    getCurrent: () => focused.current.location,
+    guard: previous => previous !== focused.current.location,
+    effect: () => {
+      if (elementsApi.elements.current[focused.current.location]?.isSameNode(document.activeElement)) {
+        return
+      }
+      
+      elementsApi.elements.current[focused.current.location]?.focus()
+    }
   })
 
   bind({
     element: elementsApi.elements,
     values: {
       tabindex: {
-        get: ({ index }) => index === focused.value.location ? 0 : -1,
-        watchSource: () => focused.value.location,
+        get: ({ index }) => index === focused.current.location ? 0 : -1,
+        dependencyList: [
+          defineGuardedDependency(() => focused.current.location, previous => previous !== focused.current.location),
+        ],
       },
     }
   })
 
 
   // SELECTED
-  const selected: FocusedAndSelected<true>['selected'] = usePickable(elementsApi.elements.value),
+  const selected: FocusedAndSelected<true>['selected'] = usePickable(elementsApi.elements.current),
         select: FocusedAndSelected<true>['select'] = createEligiblePicking({
           pickable: selected,
           ability,
@@ -137,13 +145,13 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
 
   if (selectsOnFocus) {
     watch(
-      () => focused.value.location,
-      () => select.exact(focused.value.location, { replace: 'all' })
+      () => focused.current.location,
+      () => select.exact(focused.current.location, { replace: 'all' })
     )
   }
 
   onMounted(() => {
-    watchPostEffect(() => selected.value.array = elementsApi.elements.value)
+    watchPostEffect(() => selected.value.array = elementsApi.elements.current)
     selected.value.pick(initialSelected)
   })
 
@@ -152,7 +160,7 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
     values: {
       ariaSelected: {
         get: ({ index }) => isSelected(index) ? 'true' : undefined,
-        watchSource: () => selected.value.picks,
+        dependencyList: () => selected.value.picks,
       },
     }
   })
@@ -400,7 +408,7 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
               const a = select.next(index)
 
               if (a === 'enabled') {
-                focused.value.navigate(selected.value.newest)
+                focused.current.navigate(selected.value.newest)
               }
             }
           }
@@ -425,7 +433,7 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
               const a = select.previous(index)
 
               if (a === 'enabled') {
-                focused.value.navigate(selected.value.newest)
+                focused.current.navigate(selected.value.newest)
               }
             }
           }
@@ -440,7 +448,7 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
 
 
               const picks: number[] = []
-              for (let i = index; i < elementsApi.elements.value.length; i++) {
+              for (let i = index; i < elementsApi.elements.current.length; i++) {
                 if (getAbility(i) === 'enabled') {
                   picks.push(i)
                 }
@@ -479,7 +487,7 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
             event.preventDefault()
 
             const picks: number[] = []
-            for (let i = 0; i < elementsApi.elements.value.length; i++) {
+            for (let i = 0; i < elementsApi.elements.current.length; i++) {
               if (getAbility(i) === 'enabled') {
                 picks.push(i)
               }
@@ -498,7 +506,7 @@ export function useFocusedAndSelected<Multiselectable extends boolean = false> (
   const selectOnFocus = (a: 'enabled' | 'disabled' | 'none') => {
     switch (a) {
       case 'enabled':
-        selected.value.pick(focused.value.location, { replace: 'all' })
+        selected.value.pick(focused.current.location, { replace: 'all' })
         break
       case 'disabled':
         selected.value.omit()

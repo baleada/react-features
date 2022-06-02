@@ -7,9 +7,7 @@ export type { Extendable } from './ensureElementFromExtendable'
 export { ensureElementsFromAffordanceElement } from './ensureElementsFromAffordanceElement'
 export type { SupportedElement, AffordanceElement } from './ensureElementsFromAffordanceElement'
 
-export { ensureWatchSources } from './ensureWatchSources'
-
-export { ensureWatchSourcesFromStatus } from './ensureWatchSourcesFromStatus'
+export { ensureDependencyListFromStatus } from './ensureDependencyListFromStatus'
 
 export { ensureGetStatus } from './ensureGetStatus'
 export type { StatusOption, GetStatus } from './ensureGetStatus'
